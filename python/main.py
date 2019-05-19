@@ -82,47 +82,27 @@ def main():
     meal_match = []
     if (args.soups != None):
         soup_match = list(
-        filter(
-            lambda wd : reduce(
-                lambda k,l: k or l
-                , map(
-                    lambda s: reduce(
-                        lambda o, n : o or n
-                        , map(
-                            lambda tr: simplify_string(tr)
-                                    in simplify_string(s),
-                            args.soups
-                        )
-                    ) 
-                ,wd.soups
-                )
-            )
-            if len(wd.soups)>0 else False
-            , week_menu
+            filter(
+                lambda day_menu: reduce(
+                    lambda acc1, soup: acc1 or reduce(
+                        lambda acc2, keyword: acc2 or simplify_string(keyword) in simplify_string(soup)
+                        , args.soups, False)
+                    ,day_menu.soups,False)
+                , week_menu)
         )
-        )
+        #print (soup_match)
+        
         
 
     if (args.meals != None):
         meal_match = list(
-        filter(
-            lambda wd : reduce(
-                lambda k,l: k or l
-                , map(
-                    lambda m: reduce(
-                        lambda o, n : o or n
-                        , map(
-                            lambda tr: simplify_string(tr)
-                                    in simplify_string(m),
-                            args.meals
-                        )
-                    ) 
-                ,wd.meals
-                )
-            )
-            if len(wd.meals)>0 else False
-            ,week_menu
-        )
+            filter(
+                lambda day_menu: reduce(
+                    lambda acc1, meals: acc1 or reduce(
+                        lambda acc2, keyword: acc2 or simplify_string(keyword) in simplify_string(meals)
+                        , args.meals, False)
+                    ,day_menu.meals, False)
+                , week_menu)
         )
     
     mail_text=""
@@ -134,7 +114,7 @@ def main():
         mail_text+="Interessantes bei Suppen:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", soup_match))+'\n'
     if (meal_bool):
         mail_text+="Interessantes bei Gerichten:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", meal_match))+'\n'  
-    #print(mail_text)
+    print(mail_text)
     
     if (soup_bool or meal_bool): send_emails(args.link, args.port, args.email, args.code ,args.recipients, mail_text)
 
