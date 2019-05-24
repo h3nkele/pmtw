@@ -4,6 +4,11 @@ import requests_html as html
 from functools import reduce
 import smtplib, ssl
 import argparse
+import wichtel
+import common
+
+import sys
+
 
 class DayMenu:
     date = ""
@@ -30,93 +35,34 @@ def send_emails(smtp_server, port, sender_addr, passwd ,receiver_addrs, body):
             
             msg =  'From: <'+sender_addr+'>\nTo: <'+rec+'>'+'\nSubject: '+ subject + '\n\n'+body
             print(msg)
-            server.sendmail(sender_addr, rec, msg)
-
-def get_week_menu(address):
-    html_content = html.HTMLSession().get(address)
-    table_iter = iter(html_content.html.find('.menu-of-week', first = True).find('tr')[1:])
-    return gen_week_menu(table_iter)
-
-def gen_week_menu(tr_iter):
-    menu = []
-    while (True):
-        try:
-            item = next(tr_iter)
-            
-            if (item.find('.day-of-week', first=True) != None):
-                menu.append(DayMenu(item.find('td')[0].text, [], []))
-            elif (item.find('td', containing="Suppe", first=True) != None):
-                menu[-1].soups.append(item.find('td')[1].text)
-                #print(menu[-1].soups[-1])
-            elif (item.find('td', containing="Essen", first=True) != None):
-                menu[-1].meals.append(item.find('td')[1].text)
-        except StopIteration:
-            break
-    return menu
+            server.sendmail(sender_addr, rec, msg.encode('utf-8'))
 
 
-def simplify_string(string):
-      return string.strip().replace(" ","").replace("\t","").replace("\n","").replace("\r","").upper() 
 
 
 
 def main():
     parser = argparse.ArgumentParser(description="Which 'wichtel' url should be seached for which keywords?")
-    parser.add_argument('-u','--url', required=True, metavar='URL', type=str, help="The url to the weekly 'wichtel' menu")
     parser.add_argument('-l', '--link', metavar='host', type=str, help='Smtp server', default='smtp.gmail.com')
     parser.add_argument('-p', '--port', metavar='port', type=int, help="The port for the smtp server", default=465)
     parser.add_argument('-e', '--email',required=True, metavar='email', type=str, help='Email address of the sender')
     parser.add_argument('-c', '--code',required=True, metavar='password', type=str, help='Password of sender email')
-    parser.add_argument('-s', '--soups', metavar='soup', nargs='*' , type=str, help='Keywords to check in soups menu')
-    parser.add_argument('-m', '--meals', metavar='meal', nargs='*' , type=str, help='Keywords to check in meals menu')
+    parser.add_argument('-k', '--keywords', metavar='keywords', nargs='*' , type=str, help='Keywords and phrases to check in meals menu')
     parser.add_argument('-r', '--recipients', metavar='email', nargs='*' , type=str, help='Email addresses of people to notify')
     
     args = parser.parse_args()
-    week_menu = get_week_menu(args.url)
-
-    #get_week_menu('https://www.wichtel.de/locations/boeblingen/weekly-menu/aktuelle-wochenkarte/')
     
-    
-    #print(map(lambda trigger: trigger.upper(), args.soups))
-    soup_match = []
-    meal_match = []
-    if (args.soups != None):
-        soup_match = list(
-            filter(
-                lambda day_menu: reduce(
-                    lambda acc1, soup: acc1 or reduce(
-                        lambda acc2, keyword: acc2 or simplify_string(keyword) in simplify_string(soup)
-                        , args.soups, False)
-                    ,day_menu.soups,False)
-                , week_menu)
-        )
-        #print (soup_match)
-        
-        
+    wichtel_menu = common.FoodSite(name='Wichtel', menu_url=wichtel.url, keywords=args.keywords, extract_menu_fn=wichtel.gen_week_menu_wichtel)
+    wichtel_matches = list(wichtel_menu.get_interesting_entrys(keywords=None, comparator_fn=lambda a, b: common.simplify_string(a)in common.simplify_string(b)))
 
-    if (args.meals != None):
-        meal_match = list(
-            filter(
-                lambda day_menu: reduce(
-                    lambda acc1, meals: acc1 or reduce(
-                        lambda acc2, keyword: acc2 or simplify_string(keyword) in simplify_string(meals)
-                        , args.meals, False)
-                    ,day_menu.meals, False)
-                , week_menu)
-        )
-    
-    mail_text=""
+    mail_text = ""
+    wichtel_bool = len(wichtel_matches) > 0
+    if (wichtel_bool):
+        mail_text+="Interessantes beim Wichtel:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", wichtel_matches))+'\n'
 
-    soup_bool = len(soup_match) > 0
-    meal_bool = len(meal_match) > 0
-
-    if (soup_bool):
-        mail_text+="Interessantes bei Suppen:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", soup_match))+'\n'
-    if (meal_bool):
-        mail_text+="Interessantes bei Gerichten:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", meal_match))+'\n'  
     print(mail_text)
     
-    if (soup_bool or meal_bool): send_emails(args.link, args.port, args.email, args.code ,args.recipients, mail_text)
+    if (wichtel_bool): send_emails(args.link, args.port, args.email, args.code ,args.recipients, mail_text)
 
 
 
