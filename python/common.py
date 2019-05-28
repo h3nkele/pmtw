@@ -77,12 +77,12 @@ class FoodSite:
 def simplify_string(string):
     return string.strip().replace(" ","").replace("\t","").replace("\n","").replace("\r","").upper()
 
-def send_emails(smtp_server, port, sender_addr, passwd ,receiver_addrs, body):
+def send_emails(smtp_server, port, sender_addr, passwd ,receiver_addrs, subject ,body):
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_addr, passwd)
 
-        subject = "lecker lecker !"
+        
 
         for rec in receiver_addrs: 
             

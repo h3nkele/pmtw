@@ -1,0 +1,18 @@
+[restaurants.wichtel]
+keywords = ["chevapcici", "maultaschen", "gyros"]
+# fuzzy_match_enabled = true # not in use atm
+
+
+[email]
+email_enabled = true
+subject = "Lecker Lecker !111"
+
+    [email.sender]
+    server = "smtp.gmail.com"
+    port = 465
+    # user_name = "" # not in use atm
+    password = ""
+    email_address = ""
+
+    [email.receiver]
+    receiver_emails = []
