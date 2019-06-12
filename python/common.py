@@ -82,11 +82,9 @@ def send_emails(smtp_server, port, sender_addr, passwd ,receiver_addrs, subject 
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_addr, passwd)
 
-        
-
         for rec in receiver_addrs: 
-            
-            msg =  'From: <'+sender_addr+'>\nTo: <'+rec+'>'+'\nSubject: '+ subject + '\n\n'+body
+            header = 'From: <'+sender_addr+'>\nTo: <'+rec+'>'+'\nSubject: '+ subject + '\nContent-Type: '+'text/plain; charset=utf-8'+'\n\n'
+            msg = header + body
             print(msg)
             server.sendmail(sender_addr, rec, msg.encode('utf-8'))
 

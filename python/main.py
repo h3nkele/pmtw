@@ -31,7 +31,7 @@ def main():
     if (wichtel_bool):
         mail_text+="Interessantes beim Wichtel:\n\t"+str(reduce(lambda a,b:str(a)+'\n\t'+str(b)if b != None else "", wichtel_matches))+'\n'
 
-    print(mail_text)
+    #print(mail_text)
     
     if (wichtel_bool and cfg_e['email_enabled'] and not args.debug):
         send_cfg = cfg_e['sender']
